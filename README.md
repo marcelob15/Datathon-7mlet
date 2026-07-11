@@ -1,7 +1,3 @@
-Com certeza! Vamos reestruturar o seu arquivo `README.md` para transformá-lo em uma documentação completa, técnica e visual. Incluí as análises solicitadas (idade, saldo, missing values, outliers, duration e leakage) com as duas figuras geradas no seu notebook, além de incorporar a visão detalhada de arquitetura em nuvem (Azure/AWS) e governança de dados.
-
-Copie o conteúdo abaixo diretamente no seu arquivo `README.md`:
-
 ---
 
 # 🏦 Plataforma de Experimentação Adaptativa com Multi-Armed Bandits
