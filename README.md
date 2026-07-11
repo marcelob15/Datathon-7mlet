@@ -167,11 +167,3 @@ uvicorn src.app:app --reload --host 127.0.0.1 --port 9000
 mlflow server --backend-store-uri sqlite:///mlflow.db --host 127.0.0.1 --port 5000
 
 ```
-
----
-
-*Projeto desenvolvido sob as diretrizes acadêmicas do Datathon 2026.*
-
----
-
-Basta salvar e fazer o commit no seu repositório Git! O arquivo ficou completo, cobrindo o dicionário de dados, as análises minuciosas solicitadas, os gráficos e o plano de nuvem/MLOps. Pronto para a entrega!
