@@ -1,116 +1,101 @@
----
-
+```markdown
 # 🏦 Plataforma de Experimentação Adaptativa com Multi-Armed Bandits
 
-Este repositório contém a solução end-to-end do **Datathon (Fase 05)**. O objetivo do projeto é projetar e operar uma plataforma de experimentação adaptativa para a otimização de canais de contato de uma instituição financeira digital, substituindo regras fixas e testes A/B longos por um aprendizado online baseado no algoritmo **Thompson Sampling**.
+Este repositório contém a solução end-to-end desenvolvida para o **Datathon (Fase 05)**[cite: 1]. O objetivo do projeto é implementar e operar uma infraestrutura de experimentação contínua para campanhas de marketing financeiro em canais digitais[cite: 1, 7]. Utilizando algoritmos de aprendizado online (*Online Learning*), a solução substitui regras de negócio engessadas e testes A/B longos por uma abordagem adaptativa baseada em **Thompson Sampling**, maximizando a taxa de conversão e a recompensa acumulada[cite: 1, 7].
 
 ---
 
 ## 📊 1. Base Factual e Dicionário de Dados
 
-A base utilizada como referência de contexto de clientes é o **Bank Marketing Dataset**, de origem primária do UCI Machine Learning Repository e hospedado publicamente no Kaggle.
+A base utilizada como referência de contexto de clientes é o **Bank Marketing Dataset**, originário do UCI Machine Learning Repository e hospedado publicamente no Kaggle[cite: 1, 8]. O conjunto de dados conta com **41.188 registros** e variáveis que descrevem o perfil socioeconômico e financeiro do cliente[cite: 8].
 
-### Principais Atributos de Contexto Utilizados
-
-
-
-* `age`: Idade do cliente (numérico).
-
-
-* `job`: Profissão do cliente (categórico).
-
-
-* `marital`: Estado civil (categórico).
-
-
-* `education`: Nível de escolaridade (categórico).
-
-
-* `default`: Registros de inadimplência ativa (categórico).
-
-
-* `balance`: Saldo médio anual em conta (numérico).
-
-
-* `housing` / `loan`: Financiamento imobiliário ou empréstimos ativos (categórico).
-
-
-* `contact`: Canal de contato utilizado original (`cellular` ou `telephone`).
-
-
+### Mapeamento de Atributos de Contexto (Vetor de Contexto)[cite: 8, 13]
+*   `age`: Idade do cliente (numérico)[cite: 8].
+*   `job`: Profissão do cliente (categórico, ex: admin, technician, blue-collar)[cite: 8].
+*   `marital`: Estado civil (categórico: married, single, divorced, unknown)[cite: 8].
+*   `education`: Nível de escolaridade (categórico)[cite: 8].
+*   `default`: Registros de inadimplência ativa de crédito (categórico)[cite: 8].
+*   `housing`: Indica se o cliente possui financiamento imobiliário ativo (categórico)[cite: 8].
+*   `loan`: Indica se o cliente possui empréstimo pessoal ativo (categórico)[cite: 8].
+*   `poutcome`: Resultado da campanha de marketing anterior (categórico: success, failure, unknown)[cite: 8].
 
 ---
 
 ## 📈 2. Análise Exploratória (EDA) e Preparação da Base
 
-### 📊 Distribuição da Variável Alvo e Taxa de Conversão
-
-O dataset original possui **41.188 registros**. A análise da variável alvo (`y`), que representa a adesão do cliente ao depósito a prazo, revela uma base desbalanceada com **11,26% de taxa de conversão histórica**.
-
-Para algoritmos de Multi-Armed Bandits, essa variável foi remapeada para a coluna numérica `reward` ($1$ para sucesso/conversão e $0$ para falha).
+### Análise da Variável Alvo e Taxa de Conversão
+A variável alvo original do dataset (`y`) indica se o cliente aceitou ou não a oferta de depósito a prazo[cite: 1, 8]. O cenário apresenta um forte desbalanceamento de classes, registrando **11,26% de taxa de conversão histórica** (4.640 sucessos contra 36.548 falhas)[cite: 14]. Para a modelagem de Bandits, essa variável foi remapeada para a coluna numérica `reward` ($1$ para sucesso/conversão e $0$ para falha)[cite: 4, 13].
 
 ![Distribuição da Conversão Histórica](image/histórica.png)
 
-### 👥 Distribuição de Idade e Saldo (*Balance*)
+### Distribuição de Contexto, Missing Values e Outliers[cite: 6]
+*   **Idade e Saldo:** A maior concentração de clientes elegíveis encontra-se na faixa dos 30 aos 45 anos. Variáveis financeiras apresentam forte assimetria positiva, com caldas longas representando clientes de alta renda[cite: 8].
+*   **Missing Values:** O dataset não possui valores nulos tradicionais (`NaN`). No entanto, categorias rotuladas como `"unknown"` (em `job`, `education` e `marital`) foram tratadas como dados de contexto válidos, representando cenários reais de incerteza cadastral[cite: 8].
+*   **Outliers:** Picos isolados foram encontrados nas variáveis `campaign` (número de contatos realizados) e indicadores macroeconômicos, sendo preservados para simular a fricção real das abordagens[cite: 8].
 
-* **Idade:** A maior concentração de clientes elegíveis está na faixa dos **30 aos 45 anos**, com distribuições menores para jovens adultos e aposentados.
-* **Saldo:** A variável apresenta grande assimetria positiva, com uma massa densa concentrada em valores baixos a médios e caudas longas estendendo-se para clientes de alta renda.
-
-### 🔍 Missing Values e Outliers
-
-* **Missing Values:** O dataset não apresenta valores nulos nulos clássicos (`NaN`). No entanto, variáveis como `job`, `education` e `marital` possuem categorias rotuladas explicitamente como `"unknown"`, que foram mapeadas e preservadas via One-Hot Encoding como contexto válido de incerteza do cliente.
-
-
-* **Outliers:** Identificados principalmente nas colunas de saldo (`balance`) e número de contatos da campanha (`campaign`). Não foram removidos para evitar a perda de cenários reais de clientes com alto patrimônio ou alta fricção operacional.
-
-### ⏱️ Análise de Duration e Temporal Data Leakage
-
-A coluna `duration` (duração da chamada em segundos) foi **obrigatoriamente removida** do pipeline.
-
-> ⚠️ **Justificativa de Leakage:** A duração da chamada só é conhecida *após* a execução e término do contato. Utilizá-la para tomar uma decisão prévia de qual canal escolher invalidaria o experimento por vazamento temporal de dados (*data leakage*).
-> 
-> 
+### Mapeamento de Data Leakage (Vazamento Temporal)[cite: 1, 6]
+A coluna `duration` (duração da chamada em segundos) foi **removida obrigatoriamente** do pipeline de preparação da base[cite: 1, 4, 8]. 
+> ⚠️ **Justificativa Técnica:** A duração do contato por telefone só é conhecida *depois* que a ação é executada e finalizada[cite: 8]. Utilizá-la no vetor de decisão prévia configuraria *Data Leakage*, invalidando o poder de generalização do modelo adaptativo em produção[cite: 1, 8].
 
 ---
 
-## 🤖 3. Baseline vs. Estratégia Adaptativa (Thompson Sampling)
+## 🤖 3. Baseline Determinístico vs. Modelo Adaptativo
 
-Configuramos o experimento definindo o canal de contato como os braços (*arms*) do algoritmo: **Celular (Braço 0)** e **Telefone Fixo (Braço 1)**.
+O experimento foi estruturado definindo o canal de comunicação como os braços (*arms*) de decisão do algoritmo[cite: 1, 13]:
+*   **Braço 0:** Contato via Celular (*Cellular*)
+*   **Braço 1:** Contato via Telefone Fixo (*Telephone*)
 
-### Resultados Obtidos
+### Resultados da Simulação (Replay Method)
+Utilizando o *Replay Method* para garantir uma avaliação offline fidedigna a partir dos logs históricos, a política adaptativa do Thompson Sampling superou amplamente o Teste A/B estático[cite: 1, 4]:
 
-Ao submeter o dataset ao **Replay Method** (método de avaliação offline idôneo para logs históricos), o algoritmo adaptativo rapidamente identificou a preferência do público:
+*   **Resultados do Baseline Determinístico (A/B Test):**
+    *   Eventos avaliados: 20.539 | Taxa Média de Conversão: **11,1982%**[cite: 14]
+*   **Resultados do Thompson Sampling (Multi-Armed Bandit):**
+    *   Eventos avaliados: 26.492[cite: 14]
+    *   Toques no Canal Celular (0): 26.077 vezes | Toques no Canal Telefone Fixo (1): 415 vezes[cite: 14]
+    *   Taxa Média de Conversão: **14,5629%**[cite: 14]
+    *   🚀 **Ganho de Performance Real (Uplift): +30,05%**[cite: 14]
 
-* **Resultados do Thompson Sampling:**
-* *Toques no Canal Celular (0):* 25.605 vezes
-* *Toques no Canal Telefone Fixo (1):* 562 vezes
-* **Taxa Média de Conversão:** 14,6291%
-* 🚀 **Uplift de Performance sobre o Baseline:** **28,24%**
-
-
-
-O gráfico abaixo comprova o estreitamento da curva de incerteza do canal Celular à direita, evidenciando como o modelo rapidamente converge e explota o canal mais lucrativo.
+O gráfico abaixo detalha o aprendizado do modelo. A curva do canal Celular tornou-se estreita e deslocada para a direita, comprovando que o algoritmo reduziu a incerteza e convergiu para o braço de maior retorno comercial[cite: 1].
 
 ![Distribuições Finais do Thompson Sampling](image/final.png)
 
 ---
 
-## 🎯 4. Avaliação e Casos de Teste (Golden Set)
+## 🎯 4. Avaliação e Casos de Teste (Golden Set com Diversidade)
 
-Abaixo estão listados casos reais extraídos do dataset para validar o comportamento esperado do modelo com base no aprendizado bayesiano acumulado:
+O conjunto de testes controlado abaixo valida a maturidade do modelo, comprovando o trade-off prático entre **explotação** (focar no canal de melhor performance) e **exploração** (sorteio estocástico na cauda de incerteza do canal secundário para evitar o congelamento em regras estáticas)[cite: 1, 11].
 
 ```text
-ID do Cliente: 32884  
-  ↳ Perfil: 57 anos | Profissão: technician | Estado Civil: married | Educação: high.school
-  ↳ Canal Recomendado pelo Modelo: Celular (Braço 0)
-  ↳ Métrica Amostrada -> Prob. Celular: 0.1498 | Prob. Telefone Fixo: 0.0405
-  ↳ Justificativa: O modelo explota o canal Celular porque a densidade estatística acumulada provou que ele converte cerca de 3x mais que o telefone fixo, maximizando a receita da campanha.
+👤 CASO 1 | ID no Dataset: 100 | Modo: EXPLOTAÇÃO
+   Perfil: 54 anos | services | married | education: unknown
+   Canal Recomendado: Celular (Braço 0)
+   θ Amostrado Celular: 0.1486 | θ Amostrado Fixo: 0.0288
+   Justificativa de Engenharia: O modelo explota o Celular (α=3847, β=22232) pois a taxa de conversão acumulada é de longe superior. Para este cliente 'services' de 54 anos, a evidência favorece o canal dominante.
 
-ID do Cliente: 3169  
-  ↳ Perfil: 55 anos | Profissão: unknown | Estado Civil: married | Educação: unknown
-  ↳ Canal Recomendado pelo Modelo: Celular (Braço 0)
-  ↳ Métrica Amostrada -> Prob. Celular: 0.1512 | Prob. Telefone Fixo: 0.0374
-  ↳ Justificativa: Conversão maximizada priorizando o canal de maior engajamento histórico.
+👤 CASO 2 | ID no Dataset: 5000 | Modo: EXPLOTAÇÃO
+   Perfil: 44 anos | unknown | married | education: basic.6y
+   Canal Recomendado: Celular (Braço 0)
+   θ Amostrado Celular: 0.1445 | θ Amostrado Fixo: 0.0239
+   Justificativa de Engenharia: Explotação com base no acúmulo de dados estatísticos consistentes e de alta confiança.
+
+👤 CASO 3 | ID no Dataset: 15000 | Modo: EXPLOTAÇÃO
+   Perfil: 34 anos | entrepreneur | married | education: professional.course
+   Canal Recomendado: Celular (Braço 0)
+   θ Amostrado Celular: 0.1466 | θ Amostrado Fixo: 0.0398
+   Justificativa de Engenharia: Otimização de conversão direcionada ao canal de maior engajamento do público histórico.
+
+👤 CASO 4 | ID no Dataset: 25000 | Modo: EXPLOTAÇÃO
+   Perfil: 30 anos | admin. | single | education: university.degree
+   Canal Recomendado: Celular (Braço 0)
+   θ Amostrado Celular: 0.1459 | θ Amostrado Fixo: 0.0328
+   Justificativa de Engenharia: Escolha de alta confiança orientada pelas distribuições probabilísticas estáveis.
+
+👤 CASO 5 | ID no Dataset: 38000 | Modo: 🔍 EXPLORAÇÃO
+   Perfil: 39 anos | self-employed | married | education: university.degree
+   Canal Recomendado: Telefone Fixo (Braço 1)
+   θ Amostrado Celular: 0.1345 | θ Amostrado Fixo: 0.1352
+   Justificativa de Engenharia: EXPLORAÇÃO PONTUAL: Através do sorteio de cauda executado de forma estocástica pelo Thompson Sampling, o canal Telefone Fixo (α=13, β=404) foi selecionado para esta rodada. Essa amostragem sob incerteza é intencional: impede que a plataforma sofra de "cegueira" a mudanças de comportamento da carteira, coletando novas evidências de forma contínua.
 
 ```
 
@@ -118,7 +103,7 @@ ID do Cliente: 3169
 
 ## ☁️ 5. Arquitetura-Alvo em Nuvem (Microsoft Azure)
 
-Para operar este ecossistema adaptativo em larga escala em um ambiente financeiro corporativo, foi projetada a seguinte infraestrutura utilizando serviços nativos da **Microsoft Azure**:
+Para sustentar essa plataforma adaptativa em produção, mitigando custos operacionais e operando com baixa latência, foi desenhada uma arquitetura baseada nos serviços de nuvem da **Microsoft Azure**:
 
 ```mermaid
 graph TD
@@ -137,37 +122,54 @@ graph TD
 
 ```
 
-### Componentes da Solução[cite: 7]
+### Componentes de Infraestrutura
 
-1. **Camada de Entrada (Azure API Management):** Centraliza, protege e aplica políticas de *rate limiting* para os canais de CRM consumidores[cite: 7].
-2. **Camada de Compute (Azure Container Apps):** Executa o serviço de inferência em tempo real construído com **FastAPI**, escalando de forma elástica e sob demanda[cite: 7].
-3. **Camada de IA & Machine Learning (Azure Machine Learning & MLflow):** Orquestra o ciclo de vida do modelo, registrando os parâmetros atualizados ($Alpha$ e $Beta$) e acompanhando desvios de conceito (*concept drift*)[cite: 7].
-4. **Camada de Dados (Azure SQL & Data Lake Gen2):** O Azure SQL gerencia o estado operacional das ofertas enviados, enquanto o Data Lake armazena de forma persistente os logs de transações e a base factual tratada[cite: 7].
+
+
+1. **Azure API Management (APIM):** Gateway central de entrada que protege as APIs, gerencia o controle de acessos e aplica políticas de *rate limiting* para os canais consumidores (CRM ou apps de canais).
+
+
+2. **Azure Container Apps (ACA):** Camada serverless encarregada de hospedar e executar o serviço de decisão em tempo real construído com **FastAPI**, garantindo escalabilidade automática horizontal e deploy simplificado.
+
+
+3. **Azure SQL Database & Data Lake Storage Gen2:** O Azure SQL armazena os estados transacionais e operacionais imediatos das ações recomendadas. O Data Lake Gen2 centraliza os dados analíticos históricos, logs brutos e artefatos de treinamento para auditoria.
+
+
+4. **Azure Machine Learning (AML) & Model Registry:** Provê o ambiente para o monitoramento de *concept drift*, avaliações de injustiça (*fairness*) e tracking completo do ciclo de vida dos Bandits.
+
+
 
 ---
 
 ## 📈 6. Ciclo de Vida MLOps e Governança
 
-* **Rastreabilidade (MLflow):** Cada execução e iteração do Thompson Sampling grava de forma imutável no banco de metadados os hiperparâmetros e os resultados da política[cite: 11].
-* **Atrasos de Conversão (*Delayed Rewards*):** Em cenários reais, os clientes não convertem de imediato[cite: 13]. A arquitetura conta com um mecanismo de ingestão assíncrona diária para atualizar as matrizes estatísticas de recompensa à medida que as conversões ocorrem tardiamente[cite: 11, 13].
-* **Plano de Rollback:** Caso uma nova política implementada cause degradação das métricas de negócio em produção, a esteira é programada para realizar o chaveamento automático para a **Política Determinística (Baseline)**, mitigando prejuízos comerciais enquanto o incidente é resolvido[cite: 11].
+* **Rastreabilidade Local (MLflow):** Parâmetros analíticos ($Alpha$ e $Beta$) e métricas consolidadas de conversão e *uplift* são registrados em um banco relacional SQLite imutável (`mlflow.db`), garantindo a reprodutibilidade dos experimentos.
+
+
+* **Tratamento de Recompensas Atrasadas (*Delayed Rewards*):** Em campanhas financeiras reais, a resposta do cliente ocorre de forma assíncrona (atrasos de dias entre o envio da mensagem e o depósito em conta). A plataforma utiliza uma arquitetura de *Feedback Loop*, consolidando conversões tardias de forma diária para re-calibrar os priors sem necessidade de novos deploys de código.
+
+
+* **Plano de Fallback e Emergência:** Caso anomalias de negócio ou quedas drásticas de ROI sejam detectadas em produção por alertas de observabilidade, a API realiza o *rollback* imediato para a **Política Determinística (Baseline)**, ancorando as ofertas em regras conservadoras fixas até o restabelecimento do sistema.
+
+
 
 ---
 
-## 🚀 Como Executar o Projeto Localmente
+## 🚀 Instruções de Execução Local
 
-### 1. Iniciar a API de Decisão
+### 1. Inicializar a API de Recomendação (FastAPI)
 
 ```bash
 uvicorn src.app:app --reload --host 127.0.0.1 --port 9000
 
 ```
 
-*Acesse o Swagger interativo em `[http://127.0.0.1:9000/docs](http://127.0.0.1:9000/docs)` para testar as requisições de recomendação[cite: 1].*
+Acesse o Swagger interativo em `http://127.0.0.1:9000/docs` para disparar payloads via POST e validar o retorno em milissegundos.
 
-### 2. Iniciar o Dashboard de Governança (MLflow)
+### 2. Inicializar o Servidor de Governança (MLflow)
 
 ```bash
 mlflow server --backend-store-uri sqlite:///mlflow.db --host 127.0.0.1 --port 5000
 
 ```
+

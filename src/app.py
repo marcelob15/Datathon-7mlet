@@ -9,11 +9,11 @@ app = FastAPI(
     description="API para recomendação adaptativa de canais digitais usando Thompson Sampling."
 )
 
-# Parâmetros bayesianos extraídos e consolidados no seu experimento (Sua Governança)
-ALPHA_CELULAR = 3806
-BETA_CELULAR = 21801
-ALPHA_FIXO = 24
-BETA_FIXO = 540
+# Parâmetros bayesianos extraídos e consolidados no seu experimento real (Sua Governança)
+ALPHA_CELULAR = 3847
+BETA_CELULAR = 22232
+ALPHA_FIXO = 13
+BETA_FIXO = 404
 
 # Definição do formato de entrada de dados do Cliente (Schema)
 class ClienteInput(BaseModel):
@@ -26,6 +26,10 @@ class ClienteInput(BaseModel):
 @app.get("/")
 def home():
     return {"status": "Online", "projeto": "Datathon 7MLET - Canal Adaptativo"}
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
 
 @app.post("/recomendar")
 def recomendar_canal(cliente: ClienteInput):
