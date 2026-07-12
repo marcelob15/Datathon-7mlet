@@ -49,6 +49,8 @@ O dataset original possui **41.188 registros**. A análise da variável alvo (`y
 
 Para algoritmos de Multi-Armed Bandits, essa variável foi remapeada para a coluna numérica `reward` ($1$ para sucesso/conversão e $0$ para falha).
 
+![Distribuição da Conversão Histórica](image/histórica.png)
+
 ### 👥 Distribuição de Idade e Saldo (*Balance*)
 
 * **Idade:** A maior concentração de clientes elegíveis está na faixa dos **30 aos 45 anos**, com distribuições menores para jovens adultos e aposentados.
@@ -88,6 +90,8 @@ Ao submeter o dataset ao **Replay Method** (método de avaliação offline idôn
 
 
 O gráfico abaixo comprova o estreitamento da curva de incerteza do canal Celular à direita, evidenciando como o modelo rapidamente converge e explota o canal mais lucrativo.
+
+![Distribuições Finais do Thompson Sampling](image/final.png)
 
 ---
 
