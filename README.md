@@ -474,58 +474,25 @@ http://127.0.0.1:5000
 ```text
 .
 ├── data/
-│   ├── raw/
-│   └── processed/
+│   ├── bank_prepared.csv
+│   ├── bank-additional-full.csv
+│   └── bank-additional-names.txt
 │
 ├── image/
 │   ├── historica.png
 │   └── final.png
 │
 ├── notebooks/
+│   └── eda_e_preparacao.ipynb
 │
 ├── src/
 │   ├── app.py
-│   ├── bandit.py
-│   ├── replay.py
-│   └── utils.py
+│   └── mlflow_tracking.py
 │
-├── mlruns/
 ├── mlflow.db
 ├── requirements.txt
 └── README.md
 ```
-
----
-
-# 🛠️ Tecnologias Utilizadas
-
-- Python
-- Pandas
-- NumPy
-- Scikit-Learn
-- FastAPI
-- Uvicorn
-- MLflow
-- Matplotlib
-- Seaborn
-- Jupyter Notebook
-- Kaggle
-- Microsoft Azure
-
----
-
-# 📌 Trabalhos Futuros
-
-Como evolução da solução, podem ser incorporadas funcionalidades como:
-
-- Contextual Thompson Sampling;
-- LinUCB;
-- Contextual Bandits;
-- Recomendação personalizada por segmento de cliente;
-- Integração com Feature Store;
-- Deploy automatizado via CI/CD;
-- Monitoramento de Data Drift e Concept Drift;
-- Registro automático de modelos no Azure Machine Learning.
 
 ---
 
