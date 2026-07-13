@@ -1,3 +1,9 @@
+## 📋 Resumo Executivo
+
+Este projeto implementa uma plataforma de recomendação adaptativa baseada em **Thompson Sampling (Multi-Armed Bandit)** para seleção do canal de contato mais adequado em campanhas de marketing bancário.
+
+Como base de experimentação foi utilizado o **Bank Marketing Dataset** do Kaggle. O projeto contempla todo o ciclo de Machine Learning Engineering, incluindo análise exploratória dos dados, preparação da base, implementação de um modelo baseline, comparação com uma política adaptativa, disponibilização de uma API em FastAPI para recomendação em tempo real e rastreamento dos experimentos utilizando MLflow.
+
 ```markdown
 # 🏦 Plataforma de Experimentação Adaptativa com Multi-Armed Bandits
 
@@ -9,7 +15,7 @@ Este repositório contém a solução end-to-end desenvolvida para o **Datathon 
 
 ### Base utilizada
 
-https://www.kaggle.com/datasets/henriqueyamahata/bank-marketing
+[Bank Marketing Dataset (Kaggle)](https://www.kaggle.com/datasets/henriqueyamahata/bank-marketing)
 
 A base utilizada como referência de contexto de clientes é o **Bank Marketing Dataset**, originário do UCI Machine Learning Repository e hospedado publicamente no Kaggle. O conjunto de dados conta com **41.188 registros** e variáveis que descrevem o perfil socioeconômico e financeiro do cliente.
 
@@ -110,20 +116,19 @@ O conjunto de testes controlado abaixo valida a maturidade do modelo, comprovand
 Para sustentar essa plataforma adaptativa em produção, mitigando custos operacionais e operando com baixa latência, foi desenhada uma arquitetura baseada nos serviços de nuvem da **Microsoft Azure**:
 
 ```mermaid
-graph TD
-    Client[CRM / Aplicativo Bancário] --> APIM[Azure API Management]
-    subgraph Compute
-        APIM --> ACA[Azure Container Apps / FastAPI]
-    end
-    subgraph Machine Learning
-        ACA --> AML[Azure Machine Learning]
-        AML --> MLFLOW[MLflow Tracking / SQLite]
-    end
-    subgraph Dados
-        ACA --> SQL[Azure SQL Database - Operacional]
-        ACA --> ADLS[Azure Data Lake Storage Gen2 - Analítico]
-    end
+graph LR
 
+    CLIENT[CRM / App Bancário]
+        --> APIM[Azure API Management]
+        --> ACA[Azure Container Apps<br/>FastAPI]
+
+    ACA --> AML[Azure Machine Learning]
+
+    AML --> MLFLOW[MLflow Tracking Server]
+    MLFLOW --> BLOB[Azure Blob Storage]
+
+    ACA --> SQL[Azure SQL Database]
+    ACA --> ADLS[Azure Data Lake Storage Gen2]
 ```
 
 ### Componentes de Infraestrutura
@@ -139,7 +144,13 @@ graph TD
 3. **Azure SQL Database & Data Lake Storage Gen2:** O Azure SQL armazena os estados transacionais e operacionais imediatos das ações recomendadas. O Data Lake Gen2 centraliza os dados analíticos históricos, logs brutos e artefatos de treinamento para auditoria.
 
 
-4. **Azure Machine Learning (AML) & Model Registry:** Provê o ambiente para o monitoramento de *concept drift*, avaliações de injustiça (*fairness*) e tracking completo do ciclo de vida dos Bandits.
+4. **Azure Machine Learning (AML):** Ambiente responsável pelo treinamento, monitoramento do modelo, detecção de *concept drift* e integração com o MLflow.
+
+
+5. **MLflow Tracking Server:** Responsável pelo registro centralizado dos experimentos, parâmetros, métricas e versões dos modelos treinados.
+
+
+6. **Azure Blob Storage:** Armazena os artefatos dos experimentos (modelos treinados, gráficos, arquivos e demais evidências geradas pelo MLflow), permitindo rastreabilidade e reprodutibilidade.
 
 
 
@@ -147,7 +158,7 @@ graph TD
 
 ## 📈 6. Ciclo de Vida MLOps e Governança
 
-* **Rastreabilidade Local (MLflow):** Parâmetros analíticos ($Alpha$ e $Beta$) e métricas consolidadas de conversão e *uplift* são registrados em um banco relacional SQLite imutável (`mlflow.db`), garantindo a reprodutibilidade dos experimentos.
+* **Rastreabilidade (MLflow):** Durante o desenvolvimento, os experimentos são registrados localmente em `mlflow.db`. Em produção, a arquitetura utiliza um **MLflow Tracking Server** para centralizar parâmetros, métricas e versões dos modelos, armazenando os artefatos no **Azure Blob Storage**, garantindo rastreabilidade e reprodutibilidade.
 
 
 * **Tratamento de Recompensas Atrasadas (*Delayed Rewards*):** Em campanhas financeiras reais, a resposta do cliente ocorre de forma assíncrona (atrasos de dias entre o envio da mensagem e o depósito em conta). A plataforma utiliza uma arquitetura de *Feedback Loop*, consolidando conversões tardias de forma diária para re-calibrar os priors sem necessidade de novos deploys de código.
