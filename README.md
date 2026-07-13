@@ -1,62 +1,66 @@
 ```markdown
 # 🏦 Plataforma de Experimentação Adaptativa com Multi-Armed Bandits
 
-Este repositório contém a solução end-to-end desenvolvida para o **Datathon (Fase 05)**[cite: 1]. O objetivo do projeto é implementar e operar uma infraestrutura de experimentação contínua para campanhas de marketing financeiro em canais digitais[cite: 1, 7]. Utilizando algoritmos de aprendizado online (*Online Learning*), a solução substitui regras de negócio engessadas e testes A/B longos por uma abordagem adaptativa baseada em **Thompson Sampling**, maximizando a taxa de conversão e a recompensa acumulada[cite: 1, 7].
+Este repositório contém a solução end-to-end desenvolvida para o **Datathon (Fase 05)**. O objetivo do projeto é implementar e operar uma infraestrutura de experimentação contínua para campanhas de marketing financeiro em canais digitais. Utilizando algoritmos de aprendizado online (*Online Learning*), a solução substitui regras de negócio engessadas e testes A/B longos por uma abordagem adaptativa baseada em **Thompson Sampling**, maximizando a taxa de conversão e a recompensa acumulada.
 
 ---
 
 ## 📊 1. Base Factual e Dicionário de Dados
 
-A base utilizada como referência de contexto de clientes é o **Bank Marketing Dataset**, originário do UCI Machine Learning Repository e hospedado publicamente no Kaggle[cite: 1, 8]. O conjunto de dados conta com **41.188 registros** e variáveis que descrevem o perfil socioeconômico e financeiro do cliente[cite: 8].
+### Base utilizada
 
-### Mapeamento de Atributos de Contexto (Vetor de Contexto)[cite: 8, 13]
-*   `age`: Idade do cliente (numérico)[cite: 8].
-*   `job`: Profissão do cliente (categórico, ex: admin, technician, blue-collar)[cite: 8].
-*   `marital`: Estado civil (categórico: married, single, divorced, unknown)[cite: 8].
-*   `education`: Nível de escolaridade (categórico)[cite: 8].
-*   `default`: Registros de inadimplência ativa de crédito (categórico)[cite: 8].
-*   `housing`: Indica se o cliente possui financiamento imobiliário ativo (categórico)[cite: 8].
-*   `loan`: Indica se o cliente possui empréstimo pessoal ativo (categórico)[cite: 8].
-*   `poutcome`: Resultado da campanha de marketing anterior (categórico: success, failure, unknown)[cite: 8].
+https://www.kaggle.com/datasets/henriqueyamahata/bank-marketing
+
+A base utilizada como referência de contexto de clientes é o **Bank Marketing Dataset**, originário do UCI Machine Learning Repository e hospedado publicamente no Kaggle. O conjunto de dados conta com **41.188 registros** e variáveis que descrevem o perfil socioeconômico e financeiro do cliente.
+
+### Mapeamento de Atributos de Contexto (Vetor de Contexto)
+*   `age`: Idade do cliente (numérico).
+*   `job`: Profissão do cliente (categórico, ex: admin, technician, blue-collar).
+*   `marital`: Estado civil (categórico: married, single, divorced, unknown).
+*   `education`: Nível de escolaridade (categórico).
+*   `default`: Registros de inadimplência ativa de crédito (categórico).
+*   `housing`: Indica se o cliente possui financiamento imobiliário ativo (categórico).
+*   `loan`: Indica se o cliente possui empréstimo pessoal ativo (categórico).
+*   `poutcome`: Resultado da campanha de marketing anterior (categórico: success, failure, unknown).
 
 ---
 
 ## 📈 2. Análise Exploratória (EDA) e Preparação da Base
 
 ### Análise da Variável Alvo e Taxa de Conversão
-A variável alvo original do dataset (`y`) indica se o cliente aceitou ou não a oferta de depósito a prazo[cite: 1, 8]. O cenário apresenta um forte desbalanceamento de classes, registrando **11,26% de taxa de conversão histórica** (4.640 sucessos contra 36.548 falhas)[cite: 14]. Para a modelagem de Bandits, essa variável foi remapeada para a coluna numérica `reward` ($1$ para sucesso/conversão e $0$ para falha)[cite: 4, 13].
+A variável alvo original do dataset (`y`) indica se o cliente aceitou ou não a oferta de depósito a prazo. O cenário apresenta um forte desbalanceamento de classes, registrando **11,26% de taxa de conversão histórica** (4.640 sucessos contra 36.548 falhas). Para a modelagem de Bandits, essa variável foi remapeada para a coluna numérica `reward` ($1$ para sucesso/conversão e $0$ para falha).
 
 ![Distribuição da Conversão Histórica](image/histórica.png)
 
-### Distribuição de Contexto, Missing Values e Outliers[cite: 6]
-*   **Idade e Saldo:** A maior concentração de clientes elegíveis encontra-se na faixa dos 30 aos 45 anos. Variáveis financeiras apresentam forte assimetria positiva, com caldas longas representando clientes de alta renda[cite: 8].
-*   **Missing Values:** O dataset não possui valores nulos tradicionais (`NaN`). No entanto, categorias rotuladas como `"unknown"` (em `job`, `education` e `marital`) foram tratadas como dados de contexto válidos, representando cenários reais de incerteza cadastral[cite: 8].
-*   **Outliers:** Picos isolados foram encontrados nas variáveis `campaign` (número de contatos realizados) e indicadores macroeconômicos, sendo preservados para simular a fricção real das abordagens[cite: 8].
+### Distribuição de Contexto, Missing Values e Outliers
+*   **Idade e Saldo:** A maior concentração de clientes elegíveis encontra-se na faixa dos 30 aos 45 anos. Variáveis financeiras apresentam forte assimetria positiva, com caldas longas representando clientes de alta renda.
+*   **Missing Values:** O dataset não possui valores nulos tradicionais (`NaN`). No entanto, categorias rotuladas como `"unknown"` (em `job`, `education` e `marital`) foram tratadas como dados de contexto válidos, representando cenários reais de incerteza cadastral.
+*   **Outliers:** Picos isolados foram encontrados nas variáveis `campaign` (número de contatos realizados) e indicadores macroeconômicos, sendo preservados para simular a fricção real das abordagens.
 
-### Mapeamento de Data Leakage (Vazamento Temporal)[cite: 1, 6]
-A coluna `duration` (duração da chamada em segundos) foi **removida obrigatoriamente** do pipeline de preparação da base[cite: 1, 4, 8]. 
-> ⚠️ **Justificativa Técnica:** A duração do contato por telefone só é conhecida *depois* que a ação é executada e finalizada[cite: 8]. Utilizá-la no vetor de decisão prévia configuraria *Data Leakage*, invalidando o poder de generalização do modelo adaptativo em produção[cite: 1, 8].
+### Mapeamento de Data Leakage (Vazamento Temporal)
+A coluna `duration` (duração da chamada em segundos) foi **removida obrigatoriamente** do pipeline de preparação da base. 
+> ⚠️ **Justificativa Técnica:** A duração do contato por telefone só é conhecida *depois* que a ação é executada e finalizada. Utilizá-la no vetor de decisão prévia configuraria *Data Leakage*, invalidando o poder de generalização do modelo adaptativo em produção.
 
 ---
 
 ## 🤖 3. Baseline Determinístico vs. Modelo Adaptativo
 
-O experimento foi estruturado definindo o canal de comunicação como os braços (*arms*) de decisão do algoritmo[cite: 1, 13]:
+O experimento foi estruturado definindo o canal de comunicação como os braços (*arms*) de decisão do algoritmo:
 *   **Braço 0:** Contato via Celular (*Cellular*)
 *   **Braço 1:** Contato via Telefone Fixo (*Telephone*)
 
 ### Resultados da Simulação (Replay Method)
-Utilizando o *Replay Method* para garantir uma avaliação offline fidedigna a partir dos logs históricos, a política adaptativa do Thompson Sampling superou amplamente o Teste A/B estático[cite: 1, 4]:
+Utilizando o *Replay Method* para garantir uma avaliação offline fidedigna a partir dos logs históricos, a política adaptativa do Thompson Sampling superou amplamente o Teste A/B estático:
 
 *   **Resultados do Baseline Determinístico (A/B Test):**
-    *   Eventos avaliados: 20.539 | Taxa Média de Conversão: **11,1982%**[cite: 14]
+    *   Eventos avaliados: 20.539 | Taxa Média de Conversão: **11,1982%**
 *   **Resultados do Thompson Sampling (Multi-Armed Bandit):**
-    *   Eventos avaliados: 26.492[cite: 14]
-    *   Toques no Canal Celular (0): 26.077 vezes | Toques no Canal Telefone Fixo (1): 415 vezes[cite: 14]
-    *   Taxa Média de Conversão: **14,5629%**[cite: 14]
-    *   🚀 **Ganho de Performance Real (Uplift): +30,05%**[cite: 14]
+    *   Eventos avaliados: 26.492
+    *   Toques no Canal Celular (0): 26.077 vezes | Toques no Canal Telefone Fixo (1): 415 vezes
+    *   Taxa Média de Conversão: **14,5629%**
+    *   🚀 **Ganho de Performance Real (Uplift): +30,05%**
 
-O gráfico abaixo detalha o aprendizado do modelo. A curva do canal Celular tornou-se estreita e deslocada para a direita, comprovando que o algoritmo reduziu a incerteza e convergiu para o braço de maior retorno comercial[cite: 1].
+O gráfico abaixo detalha o aprendizado do modelo. A curva do canal Celular tornou-se estreita e deslocada para a direita, comprovando que o algoritmo reduziu a incerteza e convergiu para o braço de maior retorno comercial.
 
 ![Distribuições Finais do Thompson Sampling](image/final.png)
 
@@ -64,7 +68,7 @@ O gráfico abaixo detalha o aprendizado do modelo. A curva do canal Celular torn
 
 ## 🎯 4. Avaliação e Casos de Teste (Golden Set com Diversidade)
 
-O conjunto de testes controlado abaixo valida a maturidade do modelo, comprovando o trade-off prático entre **explotação** (focar no canal de melhor performance) e **exploração** (sorteio estocástico na cauda de incerteza do canal secundário para evitar o congelamento em regras estáticas)[cite: 1, 11].
+O conjunto de testes controlado abaixo valida a maturidade do modelo, comprovando o trade-off prático entre **explotação** (focar no canal de melhor performance) e **exploração** (sorteio estocástico na cauda de incerteza do canal secundário para evitar o congelamento em regras estáticas).
 
 ```text
 👤 CASO 1 | ID no Dataset: 100 | Modo: EXPLOTAÇÃO
