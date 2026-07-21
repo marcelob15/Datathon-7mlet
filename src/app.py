@@ -1,21 +1,33 @@
 # src/app.py
+
 import numpy as np
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-# Inicializa o FastAPI
+# ==============================================================================
+# API - Plataforma de Experimentação Adaptativa
+# ==============================================================================
+
 app = FastAPI(
     title="Plataforma de Experimentação Adaptativa - MLET Bancos",
-    description="API para recomendação adaptativa de canais digitais usando Thompson Sampling."
+    description="API para recomendação adaptativa do canal de contato utilizando Thompson Sampling."
 )
 
-# Parâmetros bayesianos extraídos e consolidados no seu experimento real (Sua Governança)
-ALPHA_CELULAR = 3847
-BETA_CELULAR = 22232
-ALPHA_FIXO = 13
-BETA_FIXO = 404
+# ==============================================================================
+# Priors aprendidos durante o treinamento
+# ==============================================================================
 
-# Definição do formato de entrada de dados do Cliente (Schema)
+ALPHA_CELULAR = 3854
+BETA_CELULAR = 22290
+
+ALPHA_FIXO = 5
+BETA_FIXO = 319
+
+
+# ==============================================================================
+# Modelo de Entrada
+# ==============================================================================
+
 class ClienteInput(BaseModel):
     client_id: int
     age: int
@@ -23,31 +35,58 @@ class ClienteInput(BaseModel):
     marital: str
     education: str
 
+
+# ==============================================================================
+# Endpoints
+# ==============================================================================
+
 @app.get("/")
 def home():
-    return {"status": "Online", "projeto": "Datathon 7MLET - Canal Adaptativo"}
+    return {
+        "status": "Online",
+        "projeto": "Datathon 7MLET - Thompson Sampling"
+    }
+
 
 @app.get("/health")
 def health():
-    return {"status": "healthy"}
+    return {
+        "status": "healthy"
+    }
+
 
 @app.post("/recomendar")
 def recomendar_canal(cliente: ClienteInput):
-    # Thompson Sampling: O modelo amostra as probabilidades baseado no conhecimento acumulado
+
+    # Amostragem Thompson Sampling
     theta_celular = np.random.beta(ALPHA_CELULAR, BETA_CELULAR)
     theta_fixo = np.random.beta(ALPHA_FIXO, BETA_FIXO)
-    
-    # Tomada de decisão em tempo real (Explotação Inteligente)
-    if theta_celular > theta_fixo:
-        canal_escolhido = "Celular"
-        probabilidade_amostrada = theta_celular
+
+    # Escolha do braço com maior recompensa amostrada
+    if theta_celular >= theta_fixo:
+        canal = "Celular"
+        score = theta_celular
     else:
-        canal_escolhido = "Telefone Fixo"
-        probabilidade_amostrada = theta_fixo
-        
+        canal = "Telefone Fixo"
+        score = theta_fixo
+
     return {
         "client_id": cliente.client_id,
-        "canal_recomendado": canal_escolhido,
-        "score_amostrado": round(probabilidade_amostrada, 4),
-        "justificativa": f"Canal selecionado via Thompson Sampling. Parâmetros atuais do modelo: Celular(α={ALPHA_CELULAR}), Fixo(α={ALPHA_FIXO})."
+        "canal_recomendado": canal,
+        "score_amostrado": round(score, 4),
+        "modelo": "Thompson Sampling",
+        "priors": {
+            "celular": {
+                "alpha": ALPHA_CELULAR,
+                "beta": BETA_CELULAR
+            },
+            "telefone": {
+                "alpha": ALPHA_FIXO,
+                "beta": BETA_FIXO
+            }
+        },
+        "observacao": (
+            "A recomendação utiliza os parâmetros aprendidos durante o treinamento "
+            "e seleciona o canal com maior recompensa amostrada."
+        )
     }
