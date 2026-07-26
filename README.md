@@ -371,21 +371,21 @@ A API recebe informações básicas de um cliente, executa uma amostragem Thomps
 
 ```json
 {
-    "client_id": 100,
-    "canal_recomendado": "Celular",
-    "score_amostrado": 0.1458,
-    "modelo": "Thompson Sampling",
-    "priors": {
-        "celular": {
-            "alpha": 3854,
-            "beta": 22290
-        },
-        "telefone": {
-            "alpha": 5,
-            "beta": 319
-        }
+  "client_id": 100,
+  "canal_recomendado": "Celular",
+  "score_amostrado": 0.1506,
+  "modelo": "Thompson Sampling",
+  "priors": {
+    "celular": {
+      "alpha": 3854,
+      "beta": 22290
     },
-    "observacao": "A recomendação utiliza os parâmetros aprendidos durante o treinamento."
+    "telefone": {
+      "alpha": 5,
+      "beta": 319
+    }
+  },
+  "observacao": "A recomendação utiliza os parâmetros aprendidos durante o treinamento e seleciona o canal com maior recompensa amostrada."
 }
 ```
 
