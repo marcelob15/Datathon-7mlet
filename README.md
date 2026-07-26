@@ -611,10 +611,7 @@ http://127.0.0.1:9000/docs
 ## Executando o MLflow
 
 ```bash
-mlflow server \
-    --backend-store-uri sqlite:///mlflow.db \
-    --host 127.0.0.1 \
-    --port 5000
+mlflow server --backend-store-uri sqlite:///mlflow.db --host 127.0.0.1 --port 5000
 ```
 
 Interface Web:

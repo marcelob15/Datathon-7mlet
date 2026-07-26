@@ -16,37 +16,36 @@ mlflow.set_experiment("Datathon_7MLET_Ofertas")
 with mlflow.start_run(run_name="Thompson_Sampling_Final_Run"):
 
     # --------------------------------------------------------------------------
-    # Informações do modelo
+    # Metadados do Projeto (Tags)
     # --------------------------------------------------------------------------
-
-    mlflow.log_param("algoritmo", "Thompson Sampling (Multi-Armed Bandit)")
-    mlflow.log_param("dataset", "Bank Marketing")
-    mlflow.log_param("politica_baseline", "Escolha aleatória uniforme (50/50)")
-    mlflow.log_param("metodo_avaliacao", "Replay Method")
+    mlflow.set_tags({
+        "algoritmo": "Thompson Sampling (Multi-Armed Bandit)",
+        "dataset": "Bank Marketing",
+        "politica_baseline": "Escolha aleatória uniforme (50/50)",
+        "metodo_avaliacao": "Replay Method"
+    })
 
     # --------------------------------------------------------------------------
-    # Priors aprendidos
+    # Priors / Hiperparâmetros
     # --------------------------------------------------------------------------
-
-    mlflow.log_param("alpha_celular", 3854)
-    mlflow.log_param("beta_celular", 22290)
-
-    mlflow.log_param("alpha_telefone", 5)
-    mlflow.log_param("beta_telefone", 319)
-
-    mlflow.log_param("braco_0", "Celular")
-    mlflow.log_param("braco_1", "Telefone Fixo")
+    mlflow.log_params({
+        "alpha_celular": 3854,
+        "beta_celular": 22290,
+        "alpha_telefone": 5,
+        "beta_telefone": 319,
+        "braco_0": "Celular",
+        "braco_1": "Telefone Fixo"
+    })
 
     # --------------------------------------------------------------------------
     # Métricas finais
     # --------------------------------------------------------------------------
-
-    mlflow.log_metric("eventos_baseline", 20632)
-    mlflow.log_metric("eventos_thompson", 26464)
-
-    mlflow.log_metric("taxa_conversao_baseline", 0.112737)
-    mlflow.log_metric("taxa_conversao_thompson", 0.145745)
-
-    mlflow.log_metric("uplift_percentual", 29.28)
+    mlflow.log_metrics({
+        "eventos_baseline": 20632,
+        "eventos_thompson": 26464,
+        "taxa_conversao_baseline": 0.112737,
+        "taxa_conversao_thompson": 0.145745,
+        "uplift_percentual": 29.28
+    })
 
     print("✅ Experimento registrado com sucesso no MLflow.")
